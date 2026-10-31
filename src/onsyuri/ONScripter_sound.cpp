@@ -34,6 +34,12 @@
 
 #ifdef ANDROID
 extern "C" void playVideoAndroid(const char *path);
+#if defined(USE_FFMPEG)
+// decode audio formats that SDL_mixer can not handle to a wav image
+int ffmpegDecodeAudioToWav(const unsigned char *data, long length,
+                           int out_rate, int out_channels,
+                           unsigned char **out, long *outlen);
+#endif
 #endif
 
 #if defined(IOS)
@@ -103,6 +109,20 @@ int ONScripter::playSound(const char *filename, int format, bool loop_flag, int 
 #else
         music_info = Mix_LoadMUS_RW(SDL_RWFromMem(buffer, length));
 #endif
+#if defined(ANDROID) && defined(USE_FFMPEG)
+        if (music_info == NULL) { // wma/aac/flac/... -> ffmpeg decoder -> wav
+            unsigned char *wav = NULL;
+            long wavlen = 0;
+            int rate = audio_format.freq > 0 ? audio_format.freq : 44100;
+            int channels = audio_format.channels > 0 ? audio_format.channels : 2;
+            if (ffmpegDecodeAudioToWav(buffer, length, rate, channels, &wav, &wavlen) == 0) {
+                delete[] buffer;
+                buffer = wav;
+                length = wavlen;
+                music_info = Mix_LoadMUS_RW(SDL_RWFromMem(buffer, length), 0);
+            }
+        }
+#endif
         if (music_info == NULL) {
             utils::printError("can't load music \"%s\": %s\n", filename, Mix_GetError());
         }
@@ -117,6 +137,20 @@ int ONScripter::playSound(const char *filename, int format, bool loop_flag, int 
     
     if (format & SOUND_CHUNK){
         Mix_Chunk *chunk = Mix_LoadWAV_RW(SDL_RWFromMem(buffer, length), 1);
+#if defined(ANDROID) && defined(USE_FFMPEG)
+        if (chunk == NULL) {
+            unsigned char *wav = NULL;
+            long wavlen = 0;
+            int rate = audio_format.freq > 0 ? audio_format.freq : 44100;
+            int channels = audio_format.channels > 0 ? audio_format.channels : 2;
+            if (ffmpegDecodeAudioToWav(buffer, length, rate, channels, &wav, &wavlen) == 0) {
+                delete[] buffer;
+                buffer = wav;
+                length = wavlen;
+                chunk = Mix_LoadWAV_RW(SDL_RWFromMem(buffer, length), 1);
+            }
+        }
+#endif
         if (chunk == NULL) {
             utils::printError("can't load chunk \"%s\": %s\n", filename, Mix_GetError());
         }
@@ -376,7 +410,11 @@ int ONScripter::playMPEG(const char *filename, bool click_flag, bool loop_flag)
 #elif defined(IOS)
     playVideoIOS(absolute_filename, click_flag, loop_flag);
 #elif defined(ANDROID)
+#if defined(USE_FFMPEG)
+    ret = playVideoFFmpeg(absolute_filename, click_flag, loop_flag);
+#else
     playVideoAndroid(absolute_filename);
+#endif
 #elif defined(WEB)
     playVideoWeb(absolute_filename, click_flag, loop_flag);
 #else
@@ -412,7 +450,11 @@ int ONScripter::playAVI( const char *filename, bool click_flag )
 #elif defined(IOS)
     playVideoIOS(absolute_filename, click_flag, loop_flag);
 #elif defined(ANDROID)
+#if defined(USE_FFMPEG)
+    ret = playVideoFFmpeg(absolute_filename, click_flag, false);
+#else
     playVideoAndroid(absolute_filename);
+#endif
 #else
     utils::printError( "avi command is disabled.\n" );
 #endif

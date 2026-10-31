@@ -751,6 +751,9 @@ private:
     
     int playMPEG(const char *filename, bool click_flag, bool loop_flag=false);
     int playAVI( const char *filename, bool click_flag );
+#if defined(ANDROID) && defined(USE_FFMPEG)
+    int playVideoFFmpeg(const char *filename, bool click_flag, bool loop_flag);
+#endif
     enum { WAVE_PLAY        = 0,
            WAVE_PRELOAD     = 1,
            WAVE_PLAY_LOADED = 2

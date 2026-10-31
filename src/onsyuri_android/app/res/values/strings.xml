@@ -1,16 +1,19 @@
 <resources>
     <string name="app_name">ONScripter-Yuri</string>
-    <string name="app_version">v0.7.7</string>
+    <string name="app_version">v0.7.8</string>
     <string name="app_about">
         An enhancement of ONScripter, developed by YuriSizuku \n\n
         1. Game Dir \n
-        use SAF or put game files in app, ext app dir \n
-            /storage/emulated/0/Android/data/com.yuri.onscripter/files \n
-            /storage/XXXX-XXXX/0/Android/data/com.yuri.onscripter/files \n\n
+        add local / SAF / SMB sources in the settings, and enable one or more \n
+        SMB games are downloaded to app storage before running \n\n
         2. Game Setting \n
            setting game parameter like `strech fullscreen` \n\n
         3. Game Gesture \n
            [long click/3 fingers] to invoke menu \n
-           [4 fingers] to skip text
+           [4 fingers] to skip text \n\n
+        4. Gamepad \n
+           custom button mapping in the settings \n\n
+        5. SMB \n
+           SMB2/SMB3 client: SMBJ (github.com/hierynomus/smbj), Apache License 2.0
     </string>
 </resources>

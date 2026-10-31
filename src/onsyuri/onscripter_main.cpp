@@ -185,6 +185,7 @@ int stat_ons(const char *path, struct stat * statbuf){
     int fd = jniEnv->CallIntMethod(JavaONScripter, JavaGetFD, jba, 0);
     jniEnv->DeleteLocalRef(jba);
     delete[] jb;
+    if (fd < 0) return -1;
     res = fstat(fd, statbuf);
     close(fd);
     return res;
@@ -217,6 +218,7 @@ FILE *fopen_ons(const char *path, const char *mode)
     jniEnv->DeleteLocalRef(jba);
     delete[] jb;
 
+    if (fd < 0) return NULL;
     return fdopen(fd, mode);
 }
 
@@ -224,7 +226,8 @@ FILE *fopen_ons(const char *path, const char *mode)
 extern int mkdir(const char *pathname, mode_t mode);
 int mkdir_ons(const char *path, mode_t mode)
 {
-    if (mkdir(path, mode) == 0 || errno != EACCES) return 0;
+    if (mkdir(path, mode) == 0) return 0;
+    int local_errno = errno;
 
     JNIEnv * jniEnv = NULL;
     jniVM->AttachCurrentThread(&jniEnv, NULL);
@@ -242,7 +245,9 @@ int mkdir_ons(const char *path, mode_t mode)
     jniEnv->DeleteLocalRef(jba);
     delete[] jb;
 
-    return ret;
+    if (ret == 0) return 0;
+    // keep the old behaviour for local paths that cannot be created anyway
+    return local_errno == EACCES ? -1 : 0;
 }
 }
 #endif

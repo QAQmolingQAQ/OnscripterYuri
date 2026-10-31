@@ -429,11 +429,29 @@ function(config_android TARGET_NAME)
         USE_GLES
         USE_FILELOG
         UTF8_FILESYSTEM
+        USE_FFMPEG
         SDL_JAVA_PACKAGE_PATH=com_yuri_onscripter
     )
     target_compile_options(${TARGET_NAME} PRIVATE 
         -Wno-invalid-source-encoding
     )
+
+    # ffmpeg prebuilt libraries, used to decode the movie audio/video inside
+    # the app instead of launching an external player
+    set(FFMPEG_DIR ${PROJECT_SOURCE_DIR}/thirdparty/ffmpeg)
+    if(CMAKE_ANDROID_ARCH_ABI STREQUAL "armeabi-v7a")
+        set(FFMPEG_LIB_SUFFIX "_neon")
+    else()
+        set(FFMPEG_LIB_SUFFIX "")
+    endif()
+    target_include_directories(${TARGET_NAME} PRIVATE ${FFMPEG_DIR}/include)
+    foreach(fflib avcodec avformat avutil swresample swscale)
+        add_library(ff_${fflib} SHARED IMPORTED)
+        set_target_properties(ff_${fflib} PROPERTIES
+            IMPORTED_LOCATION
+            "${FFMPEG_DIR}/lib/${CMAKE_ANDROID_ARCH_ABI}/lib${fflib}${FFMPEG_LIB_SUFFIX}.so")
+    endforeach()
+
     target_link_libraries(${TARGET_NAME} PRIVATE
         lua
         jpeg
@@ -442,7 +460,13 @@ function(config_android TARGET_NAME)
         SDL2_ttf
         SDL2_image
         SDL2_mixer
-        
+
+        ff_avformat
+        ff_avcodec
+        ff_swscale
+        ff_swresample
+        ff_avutil
+
         GLESv2
         log
     )
@@ -504,6 +528,7 @@ set(ONSYURI_CODE
     src/onsyuri/ONScripter_rmenu.cpp
     src/onsyuri/ONScripter_sound.cpp
     src/onsyuri/ONScripter_text.cpp
+    src/onsyuri/ONScripter_video.cpp
     src/onsyuri/Parallel.cpp
     src/onsyuri/resize_image.cpp
     src/onsyuri/SarReader.cpp
